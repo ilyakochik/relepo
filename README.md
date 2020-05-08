@@ -1,2 +1,2 @@
 # relepo
-Reinforcement Learning for poker
+A Reinforcement Learning test model for poker.
