@@ -2,7 +2,7 @@ import numpy as np
 from pypokerengine.players import BasePokerPlayer
 
 
-class relepo_player_v0(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
+class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
     """ Random actions player """
 
     def _action_random(self, valid_actions):

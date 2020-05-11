@@ -1,9 +1,9 @@
 import numpy as np
 from pypokerengine.players import BasePokerPlayer
-from pprint import pprint
+from pprint import pprint, pformat
 
 
-class relepo_player_v1(BasePokerPlayer):
+class Player_v1(BasePokerPlayer):
     """ End-of episode MC-alpha control storing only hole cards and action without amount """
 
     def __init__(self, Q=None, alpha=0.01, gamma=0.8, epsilon=0.05, verbose=0):
@@ -33,6 +33,8 @@ class relepo_player_v1(BasePokerPlayer):
         else:
             amount = round(np.random.uniform(low=amount_range['min'], high=amount_range['max']), -1)
 
+        if self.verbose: print('[{}] playing random {} {}'.format(self.uuid, action, amount))
+
         return action, amount
 
     def _action_e_greedy(self, valid_actions):
@@ -41,19 +43,22 @@ class relepo_player_v1(BasePokerPlayer):
         valid_actions_ = {i['action']: i['amount'] for i in valid_actions}
         actions = {k: v for k, v in self.Q[self._current_state].items() if k in valid_actions_}
 
-        if self.verbose: print('Q values for state {}: {}'.format(self._current_state, actions))
-
         if len(actions) == 0: return self._action_random(valid_actions=valid_actions)
 
-        if np.random.uniform() <= self._epsilon: # exploration
+        if self.verbose: print('[{}] Q values for state {}: {}'.format(self.uuid, self._current_state, actions))
+
+        if np.random.uniform() <= self._epsilon:  # exploration
             return self._action_random(valid_actions=valid_actions)
-        else: # exploitation
+        else:  # exploitation
             action = max(actions, key=actions.get)
 
             if not isinstance(valid_actions_[action], dict):
                 amount = valid_actions_[action]
             else:
-                amount = round(np.random.uniform(low=valid_actions_[action]['min'], high=valid_actions_[action]['max']), -1)
+                amount = round(np.random.uniform(low=valid_actions_[action]['min'], high=valid_actions_[action]['max']),
+                               -1)
+
+            if self.verbose: print('[{}] playing greedy {} {}'.format(self.uuid, action, amount))
 
             return action, amount
 
@@ -106,10 +111,33 @@ class relepo_player_v1(BasePokerPlayer):
             if state not in self.Q: self.Q[state] = {}
             if action not in self.Q[state]: self.Q[state][action] = 0
 
+            Q_old = self.Q[state][action]
             self.Q[state][action] += self._alpha * (
-                    np.sum(self._history_rewards[(i + 1):] * discounts[:-(i + 1)]) - self.Q[state][action])
+                    np.sum(self._history_rewards[(i + 1):] * discounts[:-(i + 1)]) - Q_old)
+
+            if self.verbose: print(
+                '[{}] updating Q for {} {} from {} to {} (rewards {})'.format(self.uuid, state, action, Q_old,
+                                                                              self.Q[state][action],
+                                                                              self._history_rewards))
 
         # pprint(self.Q)
+
+    def __str__(self):
+        ret_str = super().__str__() + '\n'
+        ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'.format(self._alpha, self._gamma, self._epsilon,
+                                                                         self.verbose)
+
+        Q_sorted = []
+        for k1, v1 in self.Q.items():
+            for k2, v2 in v1.items():
+                Q_sorted.append([(k1[0][1], k1[1][1], k2), round(v2, 0)])
+
+        Q_sorted = sorted(Q_sorted, key=lambda v: v[1])
+        last_n = min(5, len(Q_sorted))
+        ret_str += 'Q values (last {} of {})\n'.format(last_n, len(self.Q))
+        ret_str += pformat(Q_sorted[-last_n:])
+
+        return ret_str
 
     # we define the logic to make an action through this method. (so this method would be the core of your AI)
     def declare_action(self, valid_actions, hole_card, round_state):
@@ -134,7 +162,6 @@ class relepo_player_v1(BasePokerPlayer):
         pass
 
     def receive_round_result_message(self, winners, hand_info, round_state):
-        # print(':::::: round result')
         self._history_append(reward=self._calc_reward(round_state=round_state, winners=winners))
 
         # pprint(self._history_states)
@@ -147,3 +174,5 @@ class relepo_player_v1(BasePokerPlayer):
         # resetting for the next round
         self._history_reset()
         self._round_start_stack = self._get_stack(round_state['seats'])
+
+        if self.verbose: print()

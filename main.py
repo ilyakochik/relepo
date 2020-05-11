@@ -4,11 +4,16 @@ from relepo.relepo_player_v1 import relepo_player_v1
 from pprint import pprint
 import pickle
 
-Q_LOAD = 1
-Q_SAVE = 1
-Q_FILE = 'relepo_player_v1_Q.pickle'
-TRAIN = 1
-DEMO = 0
+CONFIG = {
+    'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
+    'players': [
+        ['v0', 'Player_v0', None, None, True, {}],
+        # ['v1q', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
+        ['v1', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}]
+    ],
+    'train': 1000,
+    'demo': 0
+}
 
 
 def calc_score(game_result, eval_player):
