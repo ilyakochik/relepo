@@ -3,8 +3,8 @@ from pypokerengine.players import BasePokerPlayer
 from pprint import pprint, pformat
 
 
-class Player_v1(BasePokerPlayer):
-    """ End-of episode MC-alpha control storing only hole cards and action without amount """
+class Player_v2(BasePokerPlayer):
+    """ End-of episode MC-alpha control using linear function approximation storing only hole cards and action """
 
     def __init__(self, alpha=0.01, gamma=0.8, epsilon=0.05, verbose=None):
         super().__init__()
@@ -14,7 +14,7 @@ class Player_v1(BasePokerPlayer):
         self._current_state = None
         self._round_start_stack = None
 
-        self._Q = {}
+        self._w = {}
         self._alpha = alpha
         self._gamma = gamma
         self._epsilon = epsilon
@@ -38,10 +38,10 @@ class Player_v1(BasePokerPlayer):
         return action, amount
 
     def _action_e_greedy(self, valid_actions):
-        if self._current_state not in self._Q: return self._action_random(valid_actions=valid_actions)
+        Q = self._get_Q(state=self._current_state)
 
         valid_actions_ = {i['action']: i['amount'] for i in valid_actions}
-        actions = {k: v for k, v in self._Q[self._current_state].items() if k in valid_actions_}
+        actions = {k: v for k, v in Q.items() if k in valid_actions_}
 
         if len(actions) == 0: return self._action_random(valid_actions=valid_actions)
 
@@ -55,12 +55,42 @@ class Player_v1(BasePokerPlayer):
             if not isinstance(valid_actions_[action], dict):
                 amount = valid_actions_[action]
             else:
-                amount = round(np.random.uniform(low=valid_actions_[action]['min'], high=valid_actions_[action]['max']),
-                               -1)
+                amount = round(np.random.uniform(low=valid_actions_[action]['min'],
+                                                 high=valid_actions_[action]['max']), -1)
 
             if self.verbose: print('[{}] playing greedy {} {}'.format(self.verbose, action, amount))
 
             return action, amount
+
+    def _get_Q(self, state):
+        """ Linear function approximation for Q values """
+        Q = {k1: sum([v2 * state.get(k2, 0) for k2, v2 in v1.items()]) for k1, v1 in self._w.items()}
+
+        return Q
+
+    def _learn(self):
+        """ Update Q-values based on MC-alpha end of round update with function approximation """
+        if len(self._history_actions) == 0: pass
+
+        discounts = np.array([self._gamma ** i for i in range(len(self._history_rewards))])
+        for i, state in enumerate(self._history_states):
+            action = self._history_actions[i]
+
+            if action not in self._w: self._w[action] = {}
+
+            for k in state:
+                if k not in self._w[action]: self._w[action][k] = 0
+
+            Q_old = self._get_Q(state)[action]
+            delta = self._alpha * (np.sum(self._history_rewards[(i + 1):] * discounts[:-(i + 1)]) - Q_old)
+
+            self._w[action] = {k: v + delta * state.get(k, 0) for k, v in self._w[action].items()}
+
+            if self.verbose: print(
+                '[{}] updating Q for {} {} from {:0.2f} to {:0.2f} (rewards {})'.
+                    format(self.verbose, state, action, Q_old, self._get_Q(state)[action], self._history_rewards))
+
+        # pprint(self.Q)
 
     def _history_append(self, state=None, action=None, reward=None):
         """ Append any of history elements: state, action, reward """
@@ -77,9 +107,9 @@ class Player_v1(BasePokerPlayer):
         self._history_rewards = []
 
     def _calc_state(self, round_state):
-        """ Calculate state ID using hole cards only """
+        """ Calculate state ID using features for linear function approximation """
 
-        return tuple(np.sort(self._hole_card))
+        return {i: 1 for i in self._hole_card}
 
     def _calc_action(self, action, amount):
         """ Calculate action ID using just action taken """
@@ -99,41 +129,19 @@ class Player_v1(BasePokerPlayer):
         stacks = [i['stack'] for i in players if i['uuid'] == uuid]
         return stacks.pop()
 
-    def _updateQ_alpha(self):
-        """ Update Q-values based on MC-alpha end of round update """
-        if len(self._history_actions) == 0: pass
-        discounts = np.array([self._gamma ** i for i in range(len(self._history_rewards))])
-        for i, state in enumerate(self._history_states):
-            action = self._history_actions[i]
-
-            if state not in self._Q: self._Q[state] = {}
-            if action not in self._Q[state]: self._Q[state][action] = 0
-
-            Q_old = self._Q[state][action]
-            self._Q[state][action] += self._alpha * (
-                    np.sum(self._history_rewards[(i + 1):] * discounts[:-(i + 1)]) - Q_old)
-
-            if self.verbose: print(
-                '[{}] updating Q for {} {} from {:0.2f} to {:0.2f} (rewards {})'.format(self.verbose, state, action, Q_old,
-                                                                              self._Q[state][action],
-                                                                              self._history_rewards))
-
-        # pprint(self.Q)
-
     def __str__(self):
         ret_str = super().__str__() + '\n'
-        ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'.format(self._alpha, self._gamma, self._epsilon,
-                                                                         self.verbose)
+        ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'. \
+            format(self._alpha, self._gamma, self._epsilon, self.verbose)
 
         Q_sorted = []
-
-        for k1, v1 in self._Q.items():
+        for k1, v1 in self._w.items():
             for k2, v2 in v1.items():
-                Q_sorted.append([(k1[0][1], k1[1][1], k2), round(v2, 0)])
+                Q_sorted.append([(k1, k2), round(v2, 0)])
 
         Q_sorted = sorted(Q_sorted, key=lambda v: v[1])
         last_n = min(5, len(Q_sorted))
-        ret_str += 'Q values (last {} of {})\n'.format(last_n, len(self._Q))
+        ret_str += 'Q values (last {} of {})\n'.format(last_n, len(self._w))
         ret_str += pformat(Q_sorted[-last_n:])
 
         return ret_str
@@ -163,7 +171,7 @@ class Player_v1(BasePokerPlayer):
     def receive_round_result_message(self, winners, hand_info, round_state):
         self._history_append(reward=self._calc_reward(round_state=round_state, winners=winners))
 
-        self._updateQ_alpha()
+        self._learn()
 
         self._history_reset()
         self._round_start_stack = self._get_stack(round_state['seats'])

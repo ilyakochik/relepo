@@ -1,6 +1,7 @@
 from pypokerengine.api.game import setup_config, start_poker
 from relepo.player_v0 import Player_v0
 from relepo.player_v1 import Player_v1
+from relepo.player_v2 import Player_v2
 from pprint import pprint
 import numpy as np
 import pandas as pd
@@ -10,11 +11,13 @@ CONFIG = {
     'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
     'players': [
         ['v0', 'Player_v0', None, None, True, {}],
-        # ['v1q', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
-        ['v1', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}]
+        ['v1-test', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
+        # ['v1-train', 'Player_v1', None, 'v1-1_10000_vs_v0.pickle', True, {}],
+        ['v2-test', 'Player_v2', 'v2-1_2000_vs_v0.pickle', None, True, {}],
+        # ['v2-train', 'Player_v2', None, 'v2-1_2000_vs_v0.pickle', True, {}],
     ],
-    'train': 1000,
-    'demo': 0
+    'run': 1,
+    'verbose': 1
 }
 
 
@@ -25,17 +28,25 @@ def calc_score(game_result):
     return scores
 
 
-def train(config, num_episodes=1000):
+def run(config, num_episodes=1000, verbose=0):
     player_names = [i['name'] for i in config.players_info]
     scores = pd.DataFrame(columns=player_names)
 
+    if verbose:
+        for i in config.players_info:
+            i['algorithm'].verbose = i['name']
+
     for i_episode in range(1, num_episodes + 1):
-        game_result = start_poker(config, verbose=0)
+        game_result = start_poker(config, verbose=verbose)
         scores = pd.DataFrame.append(scores, calc_score(game_result), ignore_index=True)
 
         if i_episode % 100 == 0:
-            print('\rTraining episode {}/{}, scores are {}.'.
+            print('\rTraining episode {}/{}, scores are {}'.
                   format(i_episode, num_episodes, scores.tail(100).mean().round(2).to_dict()), end='')
+
+    if verbose:
+        for i in config.players_info:
+            i['algorithm'].verbose = 0
 
     print()
     print('Players performance:')
@@ -74,14 +85,7 @@ def env_save(config):
 if __name__ == '__main__':
     env_config = env_create(CONFIG)
 
-    if CONFIG['train']:
-        train(env_config, num_episodes=CONFIG['train'])
-
-    if CONFIG['demo']:
-        for p_name, p_instance, p_load, p_save, p_show, p_params in CONFIG['players']:
-            if 'verbose' in p_instance.__dict__.keys(): p_instance.verbose = 1
-
-        for i in range(CONFIG['demo']):
-            start_poker(env_config, verbose=1)
+    if CONFIG['run']:
+        run(env_config, num_episodes=CONFIG['run'], verbose=CONFIG['verbose'])
 
     env_save(CONFIG)
