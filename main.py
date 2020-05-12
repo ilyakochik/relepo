@@ -12,12 +12,12 @@ CONFIG = {
     'players': [
         ['v0', 'Player_v0', None, None, True, {}],
         # ['v0b', 'Player_v0', None, None, True, {}],
-        # ['v1-train', 'Player_v1', None, 'v1-1_10000_vs_v0.pickle', True, {}],
-        ['v1-test', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
-        # ['v2-train', 'Player_v2', None, 'v2-1_2000_vs_v0.pickle', True, {}],
-        ['v2-test', 'Player_v2', 'v2-1_2000_vs_v0.pickle', None, True, {}],
-        # ['v3-train', 'Player_v3', None, 'v3-1_2000_vs_v0.pickle', True, {}],
-        ['v3-test', 'Player_v3', 'v3-1_2000_vs_v0.pickle', None, True, {}],
+        # ['v1-train', 'Player_v1', None, 'pretrained/v1-1_10000_vs_v0.pickle', True, {}],
+        ['v1-test', 'Player_v1', 'pretrained/v1-1_10000_vs_v0.pickle', None, True, {}],
+        # ['v2-train', 'Player_v2', None, 'pretrained/v2-1_2000_vs_v0.pickle', True, {}],
+        ['v2-test', 'Player_v2', 'pretrained/v2-1_2000_vs_v0.pickle', None, True, {}],
+        # ['v3-train', 'Player_v3', None, 'pretrained/v3-1_2000_vs_v0.pickle', True, {}],
+        ['v3-test', 'Player_v3', 'pretrained/v3-1_2000_vs_v0.pickle', None, True, {}],
     ],
     'run': 2000,
     'verbose': 0
