@@ -2,22 +2,25 @@ from pypokerengine.api.game import setup_config, start_poker
 from relepo.player_v0 import Player_v0
 from relepo.player_v1 import Player_v1
 from relepo.player_v2 import Player_v2
-from pprint import pprint
-import numpy as np
+from relepo.player_v3 import Player_v3
 import pandas as pd
 import pickle
+import plot_utils
 
 CONFIG = {
     'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
     'players': [
         ['v0', 'Player_v0', None, None, True, {}],
-        ['v1-test', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
+        # ['v0b', 'Player_v0', None, None, True, {}],
         # ['v1-train', 'Player_v1', None, 'v1-1_10000_vs_v0.pickle', True, {}],
-        ['v2-test', 'Player_v2', 'v2-1_2000_vs_v0.pickle', None, True, {}],
+        ['v1-test', 'Player_v1', 'v1-1_10000_vs_v0.pickle', None, True, {}],
         # ['v2-train', 'Player_v2', None, 'v2-1_2000_vs_v0.pickle', True, {}],
+        ['v2-test', 'Player_v2', 'v2-1_2000_vs_v0.pickle', None, True, {}],
+        # ['v3-train', 'Player_v3', None, 'v3-1_2000_vs_v0.pickle', True, {}],
+        ['v3-test', 'Player_v3', 'v3-1_2000_vs_v0.pickle', None, True, {}],
     ],
-    'run': 1,
-    'verbose': 1
+    'run': 2000,
+    'verbose': 0
 }
 
 
@@ -52,6 +55,8 @@ def run(config, num_episodes=1000, verbose=0):
     print('Players performance:')
     print(scores.mean())
     print()
+
+    plot_utils.plot_scores(scores)
 
 
 def env_create(config):
