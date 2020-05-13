@@ -1,9 +1,17 @@
 import numpy as np
+import logging
 from pypokerengine.players import BasePokerPlayer
+
+log = logging.getLogger(__name__)
 
 
 class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
     """ Random actions player """
+
+    def __init__(self, name=None):
+        super().__init__()
+
+        self.name = name
 
     def _action_random(self, valid_actions):
         action_id = np.random.choice(len(valid_actions))
@@ -15,6 +23,8 @@ class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "Base
             amount = amount_range
         else:
             amount = round(np.random.uniform(low=amount_range['min'], high=amount_range['max']), -1)
+
+        log.debug('{}: playing random {} {}'.format(self.name, action, amount))
 
         return action, amount
 

@@ -1,12 +1,15 @@
 import numpy as np
+import logging
 from pypokerengine.players import BasePokerPlayer
 from pprint import pprint, pformat
+
+log = logging.getLogger(__name__)
 
 
 class Player_v2(BasePokerPlayer):
     """ End-of episode MC-alpha control using linear function approximation storing only hole cards and action """
 
-    def __init__(self, alpha=0.01, gamma=0.8, epsilon=0.05, verbose=None):
+    def __init__(self, alpha=0.01, gamma=0.8, epsilon=0.05, name=None):
         super().__init__()
 
         self._history_reset()
@@ -19,7 +22,7 @@ class Player_v2(BasePokerPlayer):
         self._gamma = gamma
         self._epsilon = epsilon
 
-        self.verbose = verbose
+        self.name = name
 
     def _action_random(self, valid_actions):
         """ Select random action and amount """
@@ -33,7 +36,7 @@ class Player_v2(BasePokerPlayer):
         else:
             amount = round(np.random.uniform(low=amount_range['min'], high=amount_range['max']), -1)
 
-        if self.verbose: print('[{}] playing random {} {}'.format(self.verbose, action, amount))
+        log.debug('{}: playing random {} {}'.format(self.name, action, amount))
 
         return action, amount
 
@@ -45,7 +48,7 @@ class Player_v2(BasePokerPlayer):
 
         if len(actions) == 0: return self._action_random(valid_actions=valid_actions)
 
-        if self.verbose: print('[{}] Q values for state {}: {}'.format(self.verbose, self._current_state, actions))
+        log.debug('{}: Q values for state {}: {}'.format(self.name, self._current_state, actions))
 
         if np.random.uniform() <= self._epsilon:  # exploration
             return self._action_random(valid_actions=valid_actions)
@@ -58,7 +61,7 @@ class Player_v2(BasePokerPlayer):
                 amount = round(np.random.uniform(low=valid_actions_[action]['min'],
                                                  high=valid_actions_[action]['max']), -1)
 
-            if self.verbose: print('[{}] playing greedy {} {}'.format(self.verbose, action, amount))
+            log.debug('{}: playing greedy {} {}'.format(self.name, action, amount))
 
             return action, amount
 
@@ -86,9 +89,9 @@ class Player_v2(BasePokerPlayer):
 
             self._w[action] = {k: v + delta * state.get(k, 0) for k, v in self._w[action].items()}
 
-            if self.verbose: print(
-                '[{}] updating Q for {} {} from {:0.2f} to {:0.2f} (rewards {})'.
-                    format(self.verbose, state, action, Q_old, self._get_Q(state)[action], self._history_rewards))
+            log.debug(
+                '{}: updating Q for {} {} from {:0.2f} to {:0.2f} (rewards {})'.
+                    format(self.name, state, action, Q_old, self._get_Q(state)[action], self._history_rewards))
 
         # pprint(self.Q)
 
@@ -132,7 +135,7 @@ class Player_v2(BasePokerPlayer):
     def __str__(self):
         ret_str = super().__str__() + '\n'
         ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'. \
-            format(self._alpha, self._gamma, self._epsilon, self.verbose)
+            format(self._alpha, self._gamma, self._epsilon, self.name)
 
         Q_sorted = []
         for k1, v1 in self._w.items():
@@ -175,5 +178,3 @@ class Player_v2(BasePokerPlayer):
 
         self._history_reset()
         self._round_start_stack = self._get_stack(round_state['seats'])
-
-        if self.verbose: print()

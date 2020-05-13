@@ -5,12 +5,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def plot_scores(df_scores, rolling=100):
-    # plt.figure(figsize=(10, 20), dpi=300)
-
     df_scores_rolling = df_scores.rolling(rolling).mean()
     df_scores_rolling.plot(kind='line')
 
-    plt.show()
+    # plt.show(block=False)
+    plt.draw()
+    plt.pause(0.001)
 
 def plot_blackjack_values(V):
     def get_Z(x, y, usable_ace):
