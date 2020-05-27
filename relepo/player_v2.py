@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from . import utils
 from pypokerengine.players import BasePokerPlayer
 from pprint import pprint, pformat
 
@@ -48,7 +49,7 @@ class Player_v2(BasePokerPlayer):
 
         if len(actions) == 0: return self._action_random(valid_actions=valid_actions)
 
-        log.debug('{}: Q values for state {}: {}'.format(self.name, self._current_state, actions))
+        log.debug('{}: Q values for state {}: {}'.format(self.name, self._current_state, utils.iter_round(actions)))
 
         if np.random.uniform() <= self._epsilon:  # exploration
             return self._action_random(valid_actions=valid_actions)
@@ -134,7 +135,7 @@ class Player_v2(BasePokerPlayer):
 
     def __str__(self):
         ret_str = super().__str__() + '\n'
-        ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'. \
+        ret_str += 'alpha={}, gamma={}, epsilon={}, name={}\n'. \
             format(self._alpha, self._gamma, self._epsilon, self.name)
 
         Q_sorted = []

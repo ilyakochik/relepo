@@ -117,14 +117,14 @@ class Player_v1(BasePokerPlayer):
                     np.sum(self._history_rewards[(i + 1):] * discounts[:-(i + 1)]) - Q_old)
 
             log.debug('{}: updating Q for {} {} from {:0.2f} to {:0.2f} (rewards {})'.
-                     format(self.name, state, action, Q_old, self._Q[state][action], self._history_rewards))
+                      format(self.name, state, action, Q_old, self._Q[state][action], self._history_rewards))
 
         # pprint(self.Q)
 
     def __str__(self):
         ret_str = super().__str__() + '\n'
-        ret_str += 'alpha={}, gamma={}, epsilon={}, verbose={}\n'.format(self._alpha, self._gamma, self._epsilon,
-                                                                         self.name)
+        ret_str += 'alpha={}, gamma={}, epsilon={}, name={}\n'. \
+            format(self._alpha, self._gamma, self._epsilon, self.name)
 
         Q_sorted = []
 
