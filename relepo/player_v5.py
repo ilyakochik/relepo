@@ -9,8 +9,8 @@ log = logging.getLogger(__name__)
 
 
 class Player_v5(BasePokerPlayer):
-    """ End-of episode MC-alpha control using Q-function approximation
-    via NN (hole cards -> 3 discreet actions) """
+    """ Epsilon-greedy policy with NN batch learning for Q-function approximation
+    via NN (hole cards and community cards -> 3 discreet actions) """
 
     def __init__(self, batch=1000, memory=10 ** 5, alpha=0.1, gamma=0.8,
                  epsilon=0.05, inner_layers=(21,), name=None):
@@ -118,28 +118,30 @@ class Player_v5(BasePokerPlayer):
                 utils.iter_round(dict(zip(self._action_ids, self._D_rewards[self._D_i])))
             ))
 
-            self._D_i = (self._D_i + 1) % self._memory
-            self._age += 1
-
             # train the model
-            if self._D_i % self._batch == 0:
+            if (self._D_i + 1) % self._batch == 0:
                 self._w.fit(
-                    self._D_states[self._D_i - self._batch: self._D_i],
-                    self._D_rewards[self._D_i - self._batch: self._D_i],
+                    self._D_states[self._D_i + 1 - self._batch: self._D_i + 1],
+                    self._D_rewards[self._D_i + 1 - self._batch: self._D_i + 1],
                     verbose=0
                 )
 
+                # evaluating on random subset of previous history
+                subset_ids = np.random.choice(range(0, self._D_i + 1), size=self._batch, replace=False)
                 loss = self._w.evaluate(
-                    self._D_states[: self._D_i],
-                    self._D_rewards[: self._D_i],
+                    self._D_states[subset_ids],
+                    self._D_rewards[subset_ids],
                     verbose=0
                 )
                 self._loss.append(loss)  # TODO: loss potentially uncapped
 
                 log.debug('{}: retrained with loss {:.2f}->{:.2f} on {}:{}'.format(
                     self.name, self._loss[-2], self._loss[-1],
-                    self._D_i - self._batch, self._D_i))
+                    self._D_i + 1 - self._batch, self._D_i + 1))
                 log.debug('\n' + self._w_to_str())
+
+            self._D_i = (self._D_i + 1) % self._memory
+            self._age += 1
 
     def _history_append(self, state=None, action=None, reward=None):
         """ Append any of history elements: state, action, reward """

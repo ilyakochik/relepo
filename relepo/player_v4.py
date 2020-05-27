@@ -117,28 +117,31 @@ class Player_v4(BasePokerPlayer):
                 utils.iter_round(dict(zip(self._action_ids, self._D_rewards[self._D_i])))
             ))
 
-            self._D_i = (self._D_i + 1) % self._memory
-            self._age += 1
-
             # train the model
-            if self._D_i % self._batch == 0:
+            if (self._D_i + 1) % self._batch == 0:
                 self._w.fit(
-                    self._D_states[self._D_i - self._batch: self._D_i],
-                    self._D_rewards[self._D_i - self._batch: self._D_i],
+                    self._D_states[self._D_i + 1- self._batch: self._D_i + 1],
+                    self._D_rewards[self._D_i + 1- self._batch: self._D_i + 1],
                     verbose=0
                 )
 
+                # evaluating on random subset of previous history
+                subset_ids = np.random.choice(range(0, self._D_i + 1), size=self._batch, replace=False)
                 loss = self._w.evaluate(
-                    self._D_states[: self._D_i],
-                    self._D_rewards[: self._D_i],
+                    self._D_states[subset_ids],
+                    self._D_rewards[subset_ids],
                     verbose=0
                 )
                 self._loss.append(loss)  # TODO: loss potentially uncapped
 
                 log.debug('{}: retrained with loss {:.2f}->{:.2f} on {}:{}'.format(
                     self.name, self._loss[-2], self._loss[-1],
-                    self._D_i - self._batch, self._D_i))
+                    self._D_i + 1 - self._batch, self._D_i + 1))
                 log.debug('\n' + self._w_to_str())
+
+            self._D_i = (self._D_i + 1) % self._memory
+            self._age += 1
+
 
     def _history_append(self, state=None, action=None, reward=None):
         """ Append any of history elements: state, action, reward """

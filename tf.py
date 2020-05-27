@@ -1,14 +1,23 @@
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 import time
 import sys
 # import matplotlib.pyplot as plt
 
-y_true = [[1., 0.], [1., 1.], [2., 1.]]
-y_pred = [[0., 1.], [1., 1.], [0., 1.]]
 
-mse = tf.keras.losses.MeanSquaredError()
-print(mse(y_true, y_pred).numpy())
+time_start = time.time()
+ar = np.full((10**5, 7, 52), True)
+
+for i in range(10**5):
+    nar = ar[np.random.choice(range(100, 200), size=10)]
+    # print(nar)
+print('Done in {:0.2f} sec with {:0.2f} Kb memory'.format(time.time() - time_start, sys.getsizeof(ar)/2**10))
+
+# y_true = [[1., 0.], [1., 1.], [2., 1.]]
+# y_pred = [[0., 1.], [1., 1.], [0., 1.]]
+#
+# mse = tf.keras.losses.MeanSquaredError()
+# print(mse(y_true, y_pred).numpy())
 
 
 # suits = ['S', 'C', 'D', 'H']

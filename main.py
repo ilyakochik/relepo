@@ -1,6 +1,6 @@
 from pypokerengine.api.game import setup_config, start_poker
 from pathlib import Path
-
+from pympler import asizeof
 from relepo.player_v0 import Player_v0
 from relepo.player_v1 import Player_v1
 from relepo.player_v2 import Player_v2
@@ -9,7 +9,7 @@ from relepo.player_v4 import Player_v4
 from relepo.player_v5 import Player_v5
 import pandas as pd
 import pickle
-import plot_utils
+import utils
 import time
 import logging
 import sys
@@ -20,10 +20,10 @@ CONFIG = {
     'players': [
         ['v0', 'Player_v0', None, {}],
         ['v4', 'Player_v4', 'update', {}],
-        ['v5-nn182-21', 'Player_v5', None, {'inner_layers': (182, 21)}],
-        ['v5-nn104', 'Player_v5', None, {'inner_layers': (104,)}],
+        ['v5-nn182-21', 'Player_v5', 'update', {'inner_layers': (182, 21)}],
+        ['v5-nn104', 'Player_v5', 'update', {'inner_layers': (104,)}],
     ],
-    'run': 1,
+    'run': 500,
     'verbose': 0
 }
 
@@ -51,7 +51,7 @@ def run(config, num_episodes=1000, verbose=0):
     print(scores.mean())
     print()
 
-    # plot_utils.plot_scores(scores)
+    # utils.plot_scores(scores)
 
 
 def env_create(config):
@@ -65,9 +65,11 @@ def env_create(config):
         if p_store in ['load', 'update'] and pickle_file.is_file():
             player = pickle.load(pickle_file.open(mode='rb'))
             print('\033[1;34m{}\033[1;0m {}'.format('Loaded', player))
+            print('{:.2f} Kb'.format(asizeof.asizeof(player) / 2 ** 10))
         else:
             player = globals()[p_class](**p_params, name=p_name)
             print('\033[1;34m{}\033[1;0m {}'.format('Created', player))
+            print('{:.2f} Kb'.format(asizeof.asizeof(player) / 2 ** 10))
 
         config['players'][k][1] = player
         pypoker_config.register_player(name=p_name, algorithm=player)
@@ -78,7 +80,7 @@ def env_create(config):
 
 def env_save(config):
     for p_name, p_instance, p_store, p_params in config['players']:
-        if p_store == 'update':
+        if p_store in ['save', 'update']:
             pickle_file = Path(config['folder'] + p_name + '.pickle')
 
             print('\033[1;34m{}\033[1;0m {} to {}'.format('Saved', p_name, pickle_file))
