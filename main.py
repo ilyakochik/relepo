@@ -1,10 +1,12 @@
 from pypokerengine.api.game import setup_config, start_poker
+from pathlib import Path
 
 from relepo.player_v0 import Player_v0
 from relepo.player_v1 import Player_v1
 from relepo.player_v2 import Player_v2
 from relepo.player_v3 import Player_v3
 from relepo.player_v4 import Player_v4
+from relepo.player_v5 import Player_v5
 import pandas as pd
 import pickle
 import plot_utils
@@ -14,18 +16,14 @@ import sys
 
 CONFIG = {
     'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
+    'folder': 'pretrained/',
     'players': [
-        ['v0', 'Player_v0', None, None, True, {}],
-        # ['v0b', 'Player_v0', None, None, True, {}],
-        # ['v1-train', 'Player_v1', None, 'pretrained/v1-1_10000_vs_v0.pickle', True, {}],
-        # ['v1-test', 'Player_v1', 'pretrained/v1-1_10000_vs_v0.pickle', None, True, {}],
-        # ['v2-train', 'Player_v2', None, 'pretrained/v2-1_2000_vs_v0.pickle', True, {}],
-        # ['v2-test', 'Player_v2', 'pretrained/v2-1_2000_vs_v0.pickle', None, True, {}],
-        # ['v3-train', 'Player_v3', None, 'pretrained/v3-1_2000_vs_v0.pickle', True, {}],
-        ['v3-test', 'Player_v3', 'pretrained/v3-1_2000_vs_v0.pickle', None, True, {}],
-        ['v4-train', 'Player_v4', 'pretrained/v4-1_vs_v0_v3.pickle', 'pretrained/v4-1_vs_v0_v3.pickle', True, {}],
+        ['v0', 'Player_v0', None, {}],
+        ['v4', 'Player_v4', 'update', {}],
+        ['v5-nn182-21', 'Player_v5', None, {'inner_layers': (182, 21)}],
+        ['v5-nn104', 'Player_v5', None, {'inner_layers': (104,)}],
     ],
-    'run': 500,
+    'run': 1,
     'verbose': 0
 }
 
@@ -61,14 +59,15 @@ def env_create(config):
     pypoker_config = setup_config(**config['env'])
 
     for k, v in enumerate(config['players']):
-        p_name, p_class, p_load, p_save, p_show, p_params = v
-        if p_load:
-            player = pickle.load(open(p_load, 'rb'))
+        p_name, p_class, p_store, p_params = v
+
+        pickle_file = Path(config['folder'] + p_name + '.pickle')
+        if p_store in ['load', 'update'] and pickle_file.is_file():
+            player = pickle.load(pickle_file.open(mode='rb'))
+            print('\033[1;34m{}\033[1;0m {}'.format('Loaded', player))
         else:
             player = globals()[p_class](**p_params, name=p_name)
-
-        if p_show:
-            print(player)
+            print('\033[1;34m{}\033[1;0m {}'.format('Created', player))
 
         config['players'][k][1] = player
         pypoker_config.register_player(name=p_name, algorithm=player)
@@ -78,10 +77,12 @@ def env_create(config):
 
 
 def env_save(config):
-    for p_name, p_instance, p_load, p_save, p_show, p_params in config['players']:
-        if p_save:
-            print('{} saved to {}'.format(p_name, p_save))
-            pickle.dump(p_instance, open(p_save, 'wb'))
+    for p_name, p_instance, p_store, p_params in config['players']:
+        if p_store == 'update':
+            pickle_file = Path(config['folder'] + p_name + '.pickle')
+
+            print('\033[1;34m{}\033[1;0m {} to {}'.format('Saved', p_name, pickle_file))
+            pickle.dump(p_instance, pickle_file.open(mode='wb'))
 
     print()
 
@@ -101,4 +102,4 @@ if __name__ == '__main__':
     env_save(CONFIG)
 
     print('Done in {:0.2f} sec'.format(time.time() - time_start))
-    input("Press [enter] to continue")
+    # input("Press [enter] to continue")

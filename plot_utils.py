@@ -1,8 +1,10 @@
+import logging
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+mpl_logger = logging.getLogger('matplotlib')
+mpl_logger.setLevel(logging.WARNING)
 
 def plot_scores(df_scores, rolling=100):
     df_scores_rolling = df_scores.rolling(rolling).mean()
