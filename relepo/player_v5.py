@@ -73,7 +73,9 @@ class Player_v5(BasePokerPlayer):
         valid_actions_ = {i['action']: i['amount'] for i in valid_actions}
         actions = {k: v for k, v in Q.items() if k in valid_actions_}
 
-        log.debug('{}: Q values for state: {}'.format(self.name, utils.iter_round(actions)))
+        log.debug('{}: Q values for current state:\n\t     {}'.format(
+            self.name, utils.iter_round(actions)
+        ))
 
         if np.random.uniform() <= self._epsilon:  # exploration
             return self._action_random(valid_actions=valid_actions)

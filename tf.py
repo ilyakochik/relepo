@@ -1,110 +1,189 @@
-# import tensorflow as tf
+import os
+import matplotlib.pyplot as plt
+
+import tensorflow as tf
 import numpy as np
-import time
-import sys
-# import matplotlib.pyplot as plt
+
+np.random.seed(1)
+x = np.hstack((np.random.randint(0, 4, size=(20, 1)), np.random.randint(4, 8, size=(20, 1))))
+r = np.random.randint(0, 4, size=(20,))
+y = np.random.randint(0, 4, size=(20,))
+
+l_input = tf.keras.Input(shape=(2,))
+l_output = tf.keras.layers.Dense(1, use_bias=False)(l_input)
+
+# loss = tf.keras.losses.MSE()
+model = tf.keras.Model(inputs=l_input, outputs=l_output)
+loss_object = tf.keras.losses.MeanSquaredError()
+model.compile(loss=loss_object, optimizer=tf.keras.optimizers.SGD(learning_rate=0.1))
+
+weights = model.get_weights()
+model.set_weights([weights[0] * 0])
 
 
-time_start = time.time()
-ar = np.full((10**5, 7, 52), True)
+def loss(model, x, y, training):
+    # training=training is needed only if there are layers with different
+    # behavior during training versus inference (e.g. Dropout).
+    y_ = model(x, training=training)
 
-for i in range(10**5):
-    nar = ar[np.random.choice(range(100, 200), size=10)]
-    # print(nar)
-print('Done in {:0.2f} sec with {:0.2f} Kb memory'.format(time.time() - time_start, sys.getsizeof(ar)/2**10))
+    return loss_object(y_true=y, y_pred=y_)
 
-# y_true = [[1., 0.], [1., 1.], [2., 1.]]
-# y_pred = [[0., 1.], [1., 1.], [0., 1.]]
+
+def grad(model, inputs, targets):
+    with tf.GradientTape() as tape:
+        loss_value = loss(model, inputs, targets, training=True)
+        loss_value = loss_value
+
+    return loss_value, tape.gradient(loss_value, model.trainable_variables)
+
+
+a = 0
+b = 3
+x_t = x[a:b]
+r_t = r[a:b]
+y_t = np.array([y[a:b]]).transpose()
+
+y_m = model(x_t)
+print('\n\n\n::: DATA')
+
+print('Xt')
+print(x_t)
+print('Yt')
+print(y_t)
+print('Ym')
+
+print(y_m.numpy())
+
+# for i in range(1):
+loss_value, grads = grad(model, x_t, y_t)
+print('\n\nLOSS:')
+print(loss_value)
+
+# for i in range(2):
+# grads_and_vard = zip(grads, model.trainable_variables)
+# model.optimizer.apply_gradients(grads_and_vard)
+
+print('\n\n\n::: GRADS')
+print(grads)
+#     print('\n\n\n::: NEW WEIGHTS')
+#     print(model.trainable_variables)
+
+print((2 * (0 - 2) * 1 + 2 * (0 - 3) * 3 + 2 * (3 - 0) * 0) / 3)
+print((0.1 * 2 * (0 - 2) * 1 + 1.8 * 2 * (0 - 3) * 3 + 2 * (3 - 0) * 0) / 3)
+
+model.train_on_batch(x_t, y_t, sample_weight=np.array([0.1, 1.8, 0]))
+print('\n\n\n::: NEW WEIGHTS')
+print(model.trainable_variables)
+
+# train_dataset_url = "https://storage.googleapis.com/download.tensorflow.org/data/iris_training.csv"
+# train_dataset_fp = tf.keras.utils.get_file(fname=os.path.basename(train_dataset_url),
+#                                            origin=train_dataset_url)
 #
-# mse = tf.keras.losses.MeanSquaredError()
-# print(mse(y_true, y_pred).numpy())
-
-
-# suits = ['S', 'C', 'D', 'H']
-# ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
-# cards = [s+r for s in suits for r in ranks]
-# # cards_id = {v: i for i, v in enumerate(cards)}
-# cards_id = {}
-# cards_id_max = -1
+# column_names = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'species']
 #
-# random_cards_list = []
-# for x in range(10**6):
-#     random_cards_list.append([np.random.choice(cards), np.random.choice(cards)])
+# feature_names = column_names[:-1]
+# label_name = column_names[-1]
 #
-# time_start = time.time()
-# D = []
-# for random_cards in random_cards_list:
-#     for i in random_cards:
-#         if i not in cards_id:
-#             cards_id_max += 1
-#             cards_id[i] = cards_id_max
+# class_names = ['Iris setosa', 'Iris versicolor', 'Iris virginica']
 #
-#     new_item = [0] * len(cards)
+# batch_size = 32
+# train_dataset = tf.data.experimental.make_csv_dataset(
+#     train_dataset_fp,
+#     batch_size,
+#     column_names=column_names,
+#     label_name=label_name,
+#     num_epochs=1)
+# features, labels = next(iter(train_dataset))
 #
-#     for i in random_cards:
-#         new_item[cards_id[i]] = True
 #
-#     D.append(new_item)
+# def pack_features_vector(features, labels):
+#     """Pack the features into a single array."""
+#     features = tf.stack(list(features.values()), axis=1)
+#     return features, labels
 #
-# D = np.array(D)
-# print('Done in {:0.2f} sec with {:0.2f} Kb memory'.format(time.time() - time_start, sys.getsizeof(D)/2**10))
-# print(D.shape)
 #
-# time_start = time.time()
-# D = np.zeros(shape=(len(random_cards_list), 52), dtype=bool)
-# for random_cards in random_cards_list:
-#     for i in random_cards:
-#         if i not in cards_id:
-#             cards_id_max += 1
-#             cards_id[i] = cards_id_max
+# train_dataset = train_dataset.map(pack_features_vector)
+# features, labels = next(iter(train_dataset))
 #
-#     new_item = [0] * len(cards)
-#     for i in random_cards:
-#         D[x, cards_id[i]] = True
-#
-# print('Done in {:0.2f} sec with {:0.2f} Kb memory'.format(time.time() - time_start, sys.getsizeof(D)/2**10))
-# print(D.shape)
-
-# time_start = time.time()
-# for i in range(10**6):
-#     _ = cards_id[random_card]
-# print('Done in {:0.2f} sec'.format(time.time() - time_start))
-#
-# time_start = time.time()
-# for i in range(10**6):
-#     # _ = cards_id[random_card]
-#     _ = cards.index(random_card)
-# print('Done in {:0.2f} sec'.format(time.time() - time_start))
-
-
-# print(arr)
-
-
-# mnist = tf.keras.datasets.mnist
-#
-# (x_train, y_train), (x_test, y_test) = mnist.load_data()
-# x_train, x_test = x_train / 255.0, x_test / 255.0
-
-
-# model = tf.keras.models.Sequential([
-#   tf.keras.layers.Flatten(input_shape=(28, 28)),
-#   tf.keras.layers.Dense(128, activation='relu'),
-#   tf.keras.layers.Dropout(0.2),
-#   tf.keras.layers.Dense(10)
+# model = tf.keras.Sequential([
+#     tf.keras.layers.Dense(3, activation=tf.nn.relu, input_shape=(4,), use_bias=False)  # input shape required
 # ])
 #
-# predictions = model(x_train[:1]).numpy()
-# print(tf.nn.softmax(predictions).numpy().transpose())
+# predictions = model(features)
 #
-# loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-# print(loss_fn(y_train[:1], predictions).numpy())
+# loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 #
-# model.compile(optimizer='adam',
-#               loss=loss_fn,
-#               metrics=['accuracy'])
 #
-# model.fit(x_train, y_train, epochs=5)
-# model.evaluate(x_test,  y_test, verbose=2)
-
-# plt.matshow(x_test[0])
-# plt.show()
+# def loss(model, x, y, training):
+#     # training=training is needed only if there are layers with different
+#     # behavior during training versus inference (e.g. Dropout).
+#     y_ = model(x, training=training)
+#
+#     return loss_object(y_true=y, y_pred=y_)
+#
+#
+# l = loss(model, features, labels, training=False)
+#
+#
+# def grad(model, inputs, targets):
+#     with tf.GradientTape() as tape:
+#         loss_value = loss(model, inputs, targets, training=True)
+#
+#     return loss_value, tape.gradient(loss_value, model.trainable_variables)
+#
+#
+# optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
+#
+# # loss_value, grads = grad(model, features, labels)
+#
+# # print("Step: {}, Initial Loss: {}".format(optimizer.iterations.numpy(),
+# #                                           loss_value.numpy()))
+#
+# # optimizer.apply_gradients(zip(grads, model.trainable_variables))
+#
+# # print("Step: {},         Loss: {}".format(optimizer.iterations.numpy(),
+# #                                           loss(model, features, labels, training=True).numpy()))
+#
+# train_loss_results = []
+# train_accuracy_results = []
+#
+# num_epochs = 2
+# print(':::VARS')
+# print(model.trainable_variables)
+#
+# for epoch in range(num_epochs):
+#     epoch_loss_avg = tf.keras.metrics.Mean()
+#     epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
+#
+#     # Training loop - using batches of 32
+#     for x, y in train_dataset:
+#         # x = x[:,0:2] + x[:,2:4]
+#
+#         # Optimize the model
+#         loss_value, grads = grad(model, x, y)
+#         print(':::GRADS')
+#         print(grads)
+#
+#         optimizer.apply_gradients(zip(grads, model.trainable_variables))
+#
+#         print(':::VARS')
+#         print(model.trainable_variables)
+#
+#         # Track progress
+#         epoch_loss_avg.update_state(loss_value)  # Add current batch loss
+#         # Compare predicted label to actual label
+#         # training=True is needed only if there are layers with different
+#         # behavior during training versus inference (e.g. Dropout).
+#         epoch_accuracy.update_state(y, model(x, training=True))
+#
+#     # End epoch
+#     train_loss_results.append(epoch_loss_avg.result())
+#     train_accuracy_results.append(epoch_accuracy.result())
+#
+#     if epoch % 50 == 0:
+#         print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
+#                                                                     epoch_loss_avg.result(),
+#                                                                     epoch_accuracy.result()))
+#     print()
+#     print()
+#     print()

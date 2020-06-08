@@ -7,6 +7,7 @@ from relepo.player_v2 import Player_v2
 from relepo.player_v3 import Player_v3
 from relepo.player_v4 import Player_v4
 from relepo.player_v5 import Player_v5
+from relepo.player_v6 import Player_v6
 import pandas as pd
 import pickle
 import utils
@@ -18,12 +19,14 @@ CONFIG = {
     'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
     'folder': 'pretrained/',
     'players': [
-        ['v0', 'Player_v0', None, {}],
-        ['v4', 'Player_v4', 'update', {}],
-        ['v5-nn182-21', 'Player_v5', 'update', {'inner_layers': (182, 21)}],
-        ['v5-nn104', 'Player_v5', 'update', {'inner_layers': (104,)}],
+        ['v0', 'Player_v0', None, {}, 0],
+        # ['v4', 'Player_v4', 'load', {}, 0],
+        # ['v5-nn182-21', 'Player_v5', 'update', {'inner_layers': (182, 21)}, 0 * logging.DEBUG],
+        # ['v5-nn104', 'Player_v5', 'update', {'inner_layers': (104,)}, 0],
+        ['v6-nn104', 'Player_v6', 'update', {'inner_layers': (104,)}, 0 * logging.DEBUG],
+
     ],
-    'run': 500,
+    'run': 1000,
     'verbose': 0
 }
 
@@ -59,8 +62,9 @@ def env_create(config):
     pypoker_config = setup_config(**config['env'])
 
     for k, v in enumerate(config['players']):
-        p_name, p_class, p_store, p_params = v
+        p_name, p_class, p_store, p_params, p_logging = v
 
+        # load or create file
         pickle_file = Path(config['folder'] + p_name + '.pickle')
         if p_store in ['load', 'update'] and pickle_file.is_file():
             player = pickle.load(pickle_file.open(mode='rb'))
@@ -74,12 +78,17 @@ def env_create(config):
         config['players'][k][1] = player
         pypoker_config.register_player(name=p_name, algorithm=player)
 
+        # set-up logging
+        logging.getLogger(globals()[p_class].__module__).setLevel(
+            p_logging if p_logging else logging.WARNING
+        ) # TODO setting at class level, not at instance
+
     print()
     return pypoker_config
 
 
 def env_save(config):
-    for p_name, p_instance, p_store, p_params in config['players']:
+    for p_name, p_instance, p_store, p_params, p_logging in config['players']:
         if p_store in ['save', 'update']:
             pickle_file = Path(config['folder'] + p_name + '.pickle')
 

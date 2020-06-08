@@ -14,7 +14,14 @@ class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "Base
         self.name = name
 
     def _action_random(self, valid_actions):
-        action_id = np.random.choice(len(valid_actions))
+        probs = {
+            3: [0.0, 0.8, 0.2],
+            2: [0.1, 0.7],
+            1: [1.0],
+        }
+
+        n_actions = len(valid_actions)
+        action_id = np.random.choice(n_actions, p=probs[n_actions])
 
         action = valid_actions[action_id]['action']
         amount_range = valid_actions[action_id]['amount']
