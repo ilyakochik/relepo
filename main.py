@@ -1,3 +1,8 @@
+import pandas as pd
+import pickle
+import time
+import logging
+import sys
 from pypokerengine.api.game import setup_config, start_poker
 from pathlib import Path
 from pympler import asizeof
@@ -8,26 +13,21 @@ from relepo.player_v3 import Player_v3
 from relepo.player_v4 import Player_v4
 from relepo.player_v5 import Player_v5
 from relepo.player_v6 import Player_v6
-import pandas as pd
-import pickle
-import utils
-import time
-import logging
-import sys
+from relepo.player_v7 import Player_v7
 
 CONFIG = {
     'env': {'max_round': 100, 'initial_stack': 100, 'small_blind_amount': 5},
     'folder': 'pretrained/',
     'players': [
-        ['v0', 'Player_v0', None, {}, 0],
+        ['v0a', 'Player_v0', None, {}, 0],
         # ['v4', 'Player_v4', 'load', {}, 0],
-        # ['v5-nn182-21', 'Player_v5', 'update', {'inner_layers': (182, 21)}, 0 * logging.DEBUG],
+        # ['v5-nn182-21', 'Player_v5', 'update', {'inner_layers': (182, 21)}, 0],
         # ['v5-nn104', 'Player_v5', 'update', {'inner_layers': (104,)}, 0],
-        ['v6-nn104', 'Player_v6', 'update', {'inner_layers': (104,)}, 0 * logging.DEBUG],
-
+        # ['v6-nn104', 'Player_v6', 'update', {'inner_layers': (104,)}, 0],
+        ['v7-nn104', 'Player_v7', '', {'hidden_layers': (104, ), 'batch': 3}, logging.DEBUG],
     ],
-    'run': 1000,
-    'verbose': 0
+    'run': 10,
+    'verbose': 1
 }
 
 
@@ -81,7 +81,7 @@ def env_create(config):
         # set-up logging
         logging.getLogger(globals()[p_class].__module__).setLevel(
             p_logging if p_logging else logging.WARNING
-        ) # TODO setting at class level, not at instance
+        )  # TODO setting at class level, not at instance
 
     print()
     return pypoker_config
