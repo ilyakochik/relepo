@@ -8,20 +8,20 @@ log = logging.getLogger(__name__)
 class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "BasePokerPlayer"
     """ Random actions player """
 
-    def __init__(self, name=None):
+    def __init__(self, probs={}, name=None):
         super().__init__()
+        self._probs = {
+            3: [0.0, 0.95, 0.05],
+            2: [0.0, 0.95],
+            1: [1.0]
+        }
+        self._probs.update(probs)
 
         self.name = name
 
     def _action_random(self, valid_actions):
-        probs = {
-            3: [0.0, 0.8, 0.2],
-            2: [0.1, 0.7],
-            1: [1.0],
-        }
-
         n_actions = len(valid_actions)
-        action_id = np.random.choice(n_actions, p=probs[n_actions])
+        action_id = np.random.choice(n_actions, p=self._probs[n_actions])
 
         action = valid_actions[action_id]['action']
         amount_range = valid_actions[action_id]['amount']
@@ -34,6 +34,9 @@ class Player_v0(BasePokerPlayer):  # Do not forget to make parent class as "Base
         log.debug('{}: playing random {} {}'.format(self.name, action, amount))
 
         return action, amount
+
+    def __str__(self):
+        return f'name={self.name}, probs {self._probs}'
 
     def declare_action(self, valid_actions, hole_card, round_state):
         action, amount = self._action_random(valid_actions)
